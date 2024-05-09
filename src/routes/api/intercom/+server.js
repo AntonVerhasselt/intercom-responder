@@ -20,7 +20,7 @@ export async function POST({ request }) {
         .join(" ");
 
       if (!userMessages.trim()) {
-        console.log("No user messages to process. Aborting insert.");
+        console.log("No user messages to process:", payload.data.item.conversation_parts.conversation_parts);
         return json(
           {
             status: "Failed",
