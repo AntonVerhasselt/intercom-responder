@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { insertConversation } from '$lib/mongoOperations';
-import { sendPromptToGPT } from '../../../lib/gptPromptPrep';
+import { categorizeWithGPT } from '$lib/gptCategorize';
 
 export async function POST({ request }) {
     try {
@@ -10,8 +10,8 @@ export async function POST({ request }) {
             console.log('Received conversation.user.created event');
             console.log('Conversation details:', payload.data);
 
-            await insertConversation(payload.data);
-            await sendPromptToGPT(payload.data);
+            const conversationId = await insertConversation(payload.data);
+            await categorizeWithGPT(payload.data, conversationId);
 
             return json({
                 status: 'Success',
