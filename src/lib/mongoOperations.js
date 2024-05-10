@@ -44,10 +44,7 @@ async function updateConversationWithGPTResponse(conversationId, gptResponse) {
 
 async function fetchRandomDocument() {
   try {
-    console.log("Fetching random document...");
-
     const db = await connectToMongo();
-    console.log("Connected to MongoDB.");
 
     const collection = db.collection('conversations');
 
@@ -60,7 +57,7 @@ async function fetchRandomDocument() {
       'category.category_name': { $ne: 'ambiguous' }
     });
 
-    console.log("Random document fetched:", randomDocument);
+    console.log("Random document fetched:", randomDocument._id);
 
     return randomDocument;
   } catch (error) {

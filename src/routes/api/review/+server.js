@@ -3,11 +3,7 @@ import { fetchRandomDocument } from "$lib/mongoOperations";
 
 export async function GET() {
   try {
-    console.log("Fetching random document...");
-
     const randomDocument = await fetchRandomDocument();
-
-    console.log("Random document fetched:", randomDocument);
 
     return json(
       {
@@ -20,8 +16,6 @@ export async function GET() {
       }
     );
   } catch (error) {
-    console.error("Failed to fetch document:", error);
-
     return json(
       {
         status: "Error",
