@@ -54,8 +54,8 @@ async function fetchRandomDocument() {
     console.log("Querying for random document...");
     const randomDocument = await collection.findOne({
       $or: [
-        { goodReview: { $exists: false } }, // Check if the field doesn't exist
-        { goodReview: null } // Check if the field is explicitly null
+        { goodReview: { $exists: false } },
+        { goodReview: null }
       ],
       'category.category_name': { $ne: 'ambiguous' }
     });

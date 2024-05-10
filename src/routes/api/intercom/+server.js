@@ -8,8 +8,10 @@ export async function POST({ request }) {
 
     if (payload.topic === "conversation.user.created") {
       console.log("Received conversation.user.created event");
-      console.log("Conversation details:", payload.data);
 
+      // TODO: Fetch conversation details
+
+      // TODO: Adapt userMessages check to conversation details return
       const userMessages = (
         payload.data.item.conversation_parts.conversation_parts || []
       )
@@ -32,6 +34,7 @@ export async function POST({ request }) {
         );
       }
 
+      // TODO: Load conversation details into functions + adapt the selection in the function of the message & the language
       const conversationId = await insertConversation(payload.data);
       await categorizeWithGPT(payload.data, conversationId);
 
