@@ -3,9 +3,8 @@ import connectToMongo from './mongoConnect';
 async function insertConversation(conversationData) {
   const db = await connectToMongo();
   try {
-    const { statistics, ...dataToStore } = conversationData.item;
     const documentToInsert = {
-      webhook: dataToStore
+      conversationData: conversationData
     };
     const result = await db.collection('conversations').insertOne(documentToInsert);
     console.log(`Conversation inserted with the following id: ${result.insertedId}`);

@@ -1,5 +1,44 @@
-// Fetch conversation details: https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Conversations/retrieveConversation/
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+async function fetchConversationDetails(conversationId) {
+  const authToken = process.env.INTERCOM_API_KEY;
+
+  try {
+      const response = await fetch(`https://api.intercom.io/conversations/${conversationId}?display_as=plaintext`, {
+          method: 'GET',
+          headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Intercom-Version': '2.11',
+              'Accept': 'application/json'
+          }
+      });
+
+      if (!response.ok) {
+          console.error('Failed to fetch conversation details:', response.status, response.statusText);
+          return null;
+      }
+
+      const data = await response.json();
+      const conversationPartsUserMessages = data.conversation_parts?.conversation_parts?.some(part => 
+          part.part_type === 'comment' && part.author?.type === 'user'
+      );
+      const sourceUserMessage = data.source?.author?.type === 'user';
+
+      if (!conversationPartsUserMessages && !sourceUserMessage) {
+          console.log('No user messages found in the conversation. Conversation details: ', data);
+          return null;
+      }
+
+      console.log('Conversation details found')
+      return data;
+  } catch (error) {
+      console.error('Error fetching conversation details:', error);
+      return null;
+  }
+}
 
 // Add category to conversation as tag: https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Conversations/attachTagToConversation/
 
@@ -11,3 +50,6 @@
 
 
 // Loop all actions after categorization into one function
+
+
+export { fetchConversationDetails };

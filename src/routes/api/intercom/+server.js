@@ -1,6 +1,7 @@
 import { error, json } from "@sveltejs/kit";
 import { insertConversation } from "$lib/mongoOperations";
 import { categorizeWithGPT } from "$lib/gptCategorize";
+import { fetchConversationDetails } from "$lib/intercomOperations"; 
 
 export async function POST({ request }) {
   try {
@@ -9,24 +10,14 @@ export async function POST({ request }) {
     if (payload.topic === "conversation.user.created") {
       console.log("Received conversation.user.created event");
 
-      // TODO: Fetch conversation details
+      const conversationDetails = await fetchConversationDetails(payload.data.item.id);
 
-      // TODO: Adapt userMessages check to conversation details return
-      const userMessages = (
-        payload.data.item.conversation_parts.conversation_parts || []
-      )
-        .filter(
-          (part) => part.part_type === "comment" && part.author?.type === "user"
-        )
-        .map((part) => part.body)
-        .join(" ");
-
-      if (!userMessages.trim()) {
-        console.log("No user messages to process:", payload.data.item.conversation_parts.conversation_parts);
+      if (!conversationDetails) {
+        console.log("No user messages to process or failed to fetch details for:", payload.data.item.id);
         return json(
           {
             status: "Failed",
-            message: "No user messages to process. Aborted insert.",
+            message: "No user messages to process or failed to fetch conversation details. Aborted insert.",
           },
           {
             status: 200,
@@ -34,9 +25,8 @@ export async function POST({ request }) {
         );
       }
 
-      // TODO: Load conversation details into functions + adapt the selection in the function of the message & the language
-      const conversationId = await insertConversation(payload.data);
-      await categorizeWithGPT(payload.data, conversationId);
+      const conversationId = await insertConversation(conversationDetails);
+      await categorizeWithGPT(conversationDetails, conversationId);
 
       return json(
         {
