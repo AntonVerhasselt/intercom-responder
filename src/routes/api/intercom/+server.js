@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { insertConversation } from "$lib/mongoOperations";
+import { insertWebhookData, addConversationDetails } from "$lib/mongoOperations";
 import { categorizeWithGPT } from "$lib/gptCategorize";
 import { fetchConversationDetails } from "$lib/intercomOperations"; 
 
@@ -7,25 +7,15 @@ export async function POST({ request }) {
   try {
     const payload = await request.json();
 
-    if (payload.topic === "conversation.user.created") {
-      console.log("Received conversation.user.created event");
+    // Store every webhook payload
+    const webhookId = await insertWebhookData(payload);
+    console.log(`Webhook data logged with ID: ${webhookId}`);
 
-      const conversationDetails = await fetchConversationDetails(payload.data.item.id);
+    // Fetch conversation details based on the payload's data item ID
+    const conversationDetails = await fetchConversationDetails(payload.data.item.id);
 
-      if (!conversationDetails) {
-        console.log("No user messages to process or failed to fetch details for:", payload.data.item.id);
-        return json(
-          {
-            status: "Failed",
-            message: "No user messages to process or failed to fetch conversation details. Aborted insert.",
-          },
-          {
-            status: 200,
-          }
-        );
-      }
-
-      const conversationId = await insertConversation(conversationDetails);
+    if (conversationDetails) {
+      const conversationId = await addConversationDetails(conversationDetails, webhookId);
       await categorizeWithGPT(conversationDetails, conversationId);
 
       return json(
@@ -38,11 +28,11 @@ export async function POST({ request }) {
         }
       );
     } else {
-      console.log("Received irrelevant event:", payload.topic);
+      console.log("Failed to fetch or no conversation details available for:", payload.data.item.id);
       return json(
         {
-          status: "Ignored",
-          message: "Irrelevant webhook event",
+          status: "Failed",
+          message: "Failed to fetch conversation details or no data to process."
         },
         {
           status: 200,
@@ -51,7 +41,6 @@ export async function POST({ request }) {
     }
   } catch (err) {
     console.error("Error processing the webhook:", err);
-
     return json(
       {
         status: "Error",

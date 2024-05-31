@@ -1,22 +1,45 @@
 import { ObjectId } from 'mongodb';
 import connectToMongo from './mongoConnect';
 
-// Insert new conversation in Mongo
-async function insertConversation(conversationData) {
+// Insert webhook data in Mongo
+async function insertWebhookData(webhookData) {
   const db = await connectToMongo();
   try {
     const documentToInsert = {
-      conversationData: conversationData,
-      createDate: new Date()
+      webhookData: webhookData,
+      receivedDate: new Date()
     };
     const result = await db.collection('conversations').insertOne(documentToInsert);
-    console.log(`Conversation inserted with the following id: ${result.insertedId}`);
+    console.log(`Webhook data inserted with the following id: ${result.insertedId}`);
     return result.insertedId;
   } catch (error) {
-    console.error('Error inserting conversation into MongoDB', error);
-    throw new Error('Failed to insert conversation');
+    console.error('Error inserting webhook data into MongoDB', error);
+    throw new Error('Failed to insert webhook data');
   }
 }
+
+// Add conversation details in existing webhook document in Mongo
+async function addConversationDetails(conversationData, webhookId) {
+  const db = await connectToMongo();
+  try {
+    const update = {
+      $set: {
+        conversationData: conversationData,
+        updateDate: new Date()  // Optionally record when the conversation data was added
+      }
+    };
+    const result = await db.collection('conversations').updateOne(
+      { _id: new ObjectId(webhookId) },
+      update
+    );
+    console.log(`Conversation details added to webhook document with ID: ${webhookId}`);
+    return webhookId;  // Return the same webhookId for further processing
+  } catch (error) {
+    console.error('Error updating webhook document with conversation details', error);
+    throw new Error('Failed to update webhook document with conversation details');
+  }
+}
+
 
 // Add category prompt to Mongo
 async function addCategoryPrompt(conversationId, messages) {
@@ -100,7 +123,8 @@ async function addCategoryReview(conversationId, goodCategory) {
 }
 
 export {
-  insertConversation,
+  insertWebhookData,
+  addConversationDetails,
   addCategoryPrompt,
   updateConversationWithGPTResponse,
   fetchRandomDocument,

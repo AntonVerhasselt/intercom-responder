@@ -89,7 +89,7 @@ async function categorizeWithGPT(conversationDetails, conversationId) {
       console.log("No choices available in response.");
     }
 
-    return response;
+    return jsonResponse;
   } catch (error) {
     console.error("Error sending prompt to GPT:", error);
     return null;

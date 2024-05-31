@@ -1,5 +1,7 @@
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
+import connectToMongo from './mongoConnect';
+import { stringify } from 'postcss';
 
 dotenv.config();
 
@@ -43,8 +45,53 @@ async function fetchConversationDetails(conversationId) {
 // Add category to conversation as tag: https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Conversations/attachTagToConversation/
 
 
-// Add category tag and assign admin based on category: TBD endpoint if possible
+// Add category assign admin based on category: https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Conversations/manageConversation/
+async function assignConversation(conversationId, categoryJson) {
+    const authToken = process.env.INTERCOM_API_KEY;
 
+    try {
+        const db = await connectToMongo();
+        const { category_id } = categoryJson;
+
+        const category = await db.collection('categories').findOne({ category_id });
+
+        if (!category) {
+            console.error('Category not found in the database for category_id:', category_id);
+            return null;
+        }
+
+        const adminId = category.admin_id;
+        console.log('Assigning to adminId:', adminId);
+
+        const response = await fetch(`https://api.intercom.io/conversations/${conversationId}/parts`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Intercom-Version': '2.11',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message_type: 'assignment',
+                type: 'admin',
+                admin_id: adminId,
+                assignee_id: adminId
+            })
+        });
+
+        if (!response.ok) {
+            console.error('Failed to assign conversation:', response.status, response.statusText);
+            return null;
+        }
+
+        const data = await response.json();
+        console.log(data);
+        return data;
+    } catch (error) {
+        console.error('Error assigning conversation:', error);
+        return null;
+    }
+}
 
 // Respond to the message if needed: https://developers.intercom.com/docs/references/rest-api/api.intercom.io/Conversations/replyConversation/
 
@@ -52,4 +99,4 @@ async function fetchConversationDetails(conversationId) {
 // Loop all actions after categorization into one function
 
 
-export { fetchConversationDetails };
+export { fetchConversationDetails, assignConversation };
